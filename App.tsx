@@ -10,20 +10,26 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ListItem from './components/ListItem';
+import Loading from './components/Loading';
 
 const App = () => {
   const [searchText, setSearchText] = useState('');
   const [list, setList] = useState([]);
-  const [page, setPage] = useState(1);
+  const [filteredList, setFilteredList] = useState([]);
+  const [_page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
 
   const fetchData = async (newPage = 1) => {
+    setLoading(true);
     try {
       const response = await fetch(`https://randomuser.me/api/?results=20&page=${newPage}`);
       const data = await response.json();
       setList((prevList) => [...prevList, ...data.results]);
+      setFilteredList((prevList) => [...prevList, ...data.results]);
     } catch (error) {
       console.error(error);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -32,31 +38,31 @@ const App = () => {
 
   useEffect(() => {
     if (searchText === '') {
-      setPage(1);
-      setList([]);
-      fetchData(1);
+      setFilteredList(list);
     } else {
-      setList(
+      setFilteredList(
         list.filter(
           (item) =>
-            item.name.first.toLowerCase().indexOf(searchText.toLowerCase()) > -1
+            item.name.first === searchText
         )
       );
     }
-  }, [searchText]);
+  }, [searchText, list]);
 
   const handleLoadMore = () => {
-    setPage((prevPage) => {
-      const nextPage = prevPage + 1;
-      fetchData(nextPage);
-      return nextPage;
-    });
+    if (!loading) {
+      setPage((prevPage) => {
+        const nextPage = prevPage + 1;
+        fetchData(nextPage);
+        return nextPage;
+      });
+    }
   };
 
   const handleOrderClick = () => {
-    let newList = [...list];
+    let newList = [...filteredList];
     newList.sort((a, b) => (a.name.first > b.name.first ? 1 : b.name.first > a.name.first ? -1 : 0));
-    setList(newList);
+    setFilteredList(newList);
   };
 
   return (
@@ -79,12 +85,13 @@ const App = () => {
       </View>
 
       <FlatList
-        data={list}
+        data={filteredList}
         style={styles.list}
         renderItem={({ item }) => <ListItem data={item} />}
         keyExtractor={(item, index) => `${item.login.uuid}-${index}`}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
+        ListFooterComponent={<Loading loading={loading} />}
       />
 
       <StatusBar style="light" />
@@ -118,6 +125,16 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#888',
   },
 });
 
