@@ -18,6 +18,7 @@ const App = () => {
   const [filteredList, setFilteredList] = useState([]);
   const [_page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [genderFilter, setGenderFilter] = useState(null);
 
   const fetchData = async (newPage = 1) => {
     setLoading(true);
@@ -37,17 +38,25 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    if (searchText === '') {
-      setFilteredList(list);
-    } else {
-      setFilteredList(
-        list.filter(
-          (item) =>
-            item.name.first === searchText
-        )
+    filterList();
+  }, [searchText, list, genderFilter]);
+
+  const filterList = () => {
+    let newList = list;
+
+    if (searchText !== '') {
+      newList = newList.filter(
+        (item) =>
+          item.name.first.toLowerCase().includes(searchText.toLowerCase())
       );
     }
-  }, [searchText, list]);
+
+    if (genderFilter) {
+      newList = newList.filter((item) => item.gender === genderFilter);
+    }
+
+    setFilteredList(newList);
+  };
 
   const handleLoadMore = () => {
     if (!loading) {
@@ -57,6 +66,14 @@ const App = () => {
         return nextPage;
       });
     }
+  };
+
+  const handleGenderFilterClick = () => {
+    setGenderFilter((prevGenderFilter) => {
+      if (prevGenderFilter === null) return 'male';
+      if (prevGenderFilter === 'male') return 'female';
+      return null;
+    });
   };
 
   const handleOrderClick = () => {
@@ -75,9 +92,9 @@ const App = () => {
           value={searchText}
           onChangeText={(t) => setSearchText(t)}
         />
-        <TouchableOpacity onPress={handleOrderClick} style={styles.orderButton}>
+        <TouchableOpacity onPress={handleGenderFilterClick} style={styles.filterButton}>
           <MaterialCommunityIcons
-            name="order-alphabetical-ascending"
+            name={genderFilter === 'male' ? "gender-male" : genderFilter === 'female' ? "gender-female" : "gender-male-female"}
             size={32}
             color="#888"
           />
@@ -119,22 +136,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  filterButton: {
+    width: 32,
+    marginRight: 20,
+  },
   orderButton: {
     width: 32,
     marginRight: 30,
   },
   list: {
     flex: 1,
-  },
-  loadingContainer: {
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#888',
   },
 });
 
