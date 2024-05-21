@@ -11,14 +11,17 @@ import { StatusBar } from 'expo-status-bar';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ListItem from './components/ListItem';
 import Loading from './components/Loading';
+import Modal from './components/Modal';
 
 const App = () => {
   const [searchText, setSearchText] = useState('');
   const [list, setList] = useState([]);
   const [filteredList, setFilteredList] = useState([]);
-  const [_page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [genderFilter, setGenderFilter] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [page, setPage] = useState(1);
 
   const fetchData = async (newPage = 1) => {
     setLoading(true);
@@ -34,8 +37,8 @@ const App = () => {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(page);
+  }, [page]);
 
   useEffect(() => {
     filterList();
@@ -60,11 +63,7 @@ const App = () => {
 
   const handleLoadMore = () => {
     if (!loading) {
-      setPage((prevPage) => {
-        const nextPage = prevPage + 1;
-        fetchData(nextPage);
-        return nextPage;
-      });
+      setPage((prevPage) => prevPage + 1);
     }
   };
 
@@ -76,10 +75,9 @@ const App = () => {
     });
   };
 
-  const handleOrderClick = () => {
-    let newList = [...filteredList];
-    newList.sort((a, b) => (a.name.first > b.name.first ? 1 : b.name.first > a.name.first ? -1 : 0));
-    setFilteredList(newList);
+  const handleListItemPress = (user) => {
+    setSelectedUser(user);
+    setModalVisible(true);
   };
 
   return (
@@ -104,7 +102,11 @@ const App = () => {
       <FlatList
         data={filteredList}
         style={styles.list}
-        renderItem={({ item }) => <ListItem data={item} />}
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => handleListItemPress(item)}>
+            <ListItem data={item} onPress={handleListItemPress} />
+          </TouchableOpacity>
+        )}
         keyExtractor={(item, index) => `${item.login.uuid}-${index}`}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
@@ -112,6 +114,8 @@ const App = () => {
       />
 
       <StatusBar style="light" />
+
+      <Modal modalVisible={modalVisible} selectedUser={selectedUser} setModalVisible={setModalVisible} />
     </SafeAreaView>
   );
 };
@@ -140,12 +144,42 @@ const styles = StyleSheet.create({
     width: 32,
     marginRight: 20,
   },
-  orderButton: {
-    width: 32,
-    marginRight: 30,
-  },
   list: {
     flex: 1,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    width: 300, // Definindo largura fixa
+    position: 'relative',
+  },
+  modalText: {
+    fontSize: 20,
+    marginBottom: 20,
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: -30,
+    right: -30,
+  },
+  itemPhoto: {
+    width: 50,
+    height: 50,
+    borderRadius: 30,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
 });
 

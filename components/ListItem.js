@@ -1,14 +1,14 @@
 import React from 'react';
 import { TouchableOpacity, View, Image, Text, StyleSheet } from 'react-native';
 
-const ListItem = ({ data }) => {
+const ListItem = ({ data, onPress }) => {
   const formatDate = (dateString) => {
     const [year, month, day] = dateString.split('T')[0].split('-');
     return `${day}/${month}/${year}`;
   };
 
   return (
-    <TouchableOpacity style={styles.item}>
+    <TouchableOpacity style={styles.item} onPress={() => onPress(data)}>
       <Image source={{ uri: data.picture.large }} style={styles.itemPhoto} />
       <View style={styles.itemInfo}>
         <Text style={styles.itemP1}>{data.name.first} {data.name.last}</Text>
