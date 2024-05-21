@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ListItem from './components/ListItem';
@@ -23,11 +24,16 @@ const App = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [page, setPage] = useState(1);
 
+  const CACHE_KEY = 'userCache';
+
   const fetchData = async (newPage = 1) => {
     setLoading(true);
     try {
       const response = await fetch(`https://randomuser.me/api/?results=20&page=${newPage}`);
       const data = await response.json();
+      if (newPage === 1) {
+        await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data.results));
+      }
       setList((prevList) => [...prevList, ...data.results]);
       setFilteredList((prevList) => [...prevList, ...data.results]);
     } catch (error) {
@@ -36,9 +42,26 @@ const App = () => {
     setLoading(false);
   };
 
+  const loadCachedData = async () => {
+    setLoading(true);
+    try {
+      const cachedData = await AsyncStorage.getItem(CACHE_KEY);
+      if (cachedData !== null) {
+        const parsedData = JSON.parse(cachedData);
+        setList(parsedData);
+        setFilteredList(parsedData);
+      } else {
+        fetchData(page);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    fetchData(page);
-  }, [page]);
+    loadCachedData();
+  }, []);
 
   useEffect(() => {
     filterList();
@@ -64,6 +87,7 @@ const App = () => {
   const handleLoadMore = () => {
     if (!loading) {
       setPage((prevPage) => prevPage + 1);
+      fetchData(page + 1);
     }
   };
 
@@ -85,7 +109,7 @@ const App = () => {
       <View style={styles.searchArea}>
         <TextInput
           style={styles.input}
-          placeholder="Pesquise uma pessoa"
+          placeholder="Search..."
           placeholderTextColor="#888"
           value={searchText}
           onChangeText={(t) => setSearchText(t)}
@@ -146,40 +170,6 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    width: 300, // Definindo largura fixa
-    position: 'relative',
-  },
-  modalText: {
-    fontSize: 20,
-    marginBottom: 20,
-    fontWeight: 'bold',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: -30,
-    right: -30,
-  },
-  itemPhoto: {
-    width: 50,
-    height: 50,
-    borderRadius: 30,
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
   },
 });
 
